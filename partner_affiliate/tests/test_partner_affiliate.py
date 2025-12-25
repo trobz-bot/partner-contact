@@ -8,50 +8,44 @@ class TestPartnerAffiliate(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # Disable chatter tracking to speed up tests and avoid side effects.
-        cls.env = cls.env(context=dict(cls.env.context, tracking_disable=True))
-        cls.partner_model = cls.env["res.partner"]
+        cls.partner_model = cls.env["res.partner"].with_context(
+            tracking_disable=True
+        )
 
-    def setUp(self):
-        super().setUp()
-        self.company = self.partner_model.create(
+    def _create_partner_hierarchy(self):
+        company = self.partner_model.create(
             {"name": "Parent Company", "is_company": True}
         )
-        self.contact = self.partner_model.create(
-            {
-                "name": "Employee",
-                "is_company": False,
-                "parent_id": self.company.id,
-            }
+        contact = self.partner_model.create(
+            {"name": "Employee", "is_company": False, "parent_id": company.id}
         )
-        self.archived_contact = self.partner_model.create(
+        archived_contact = self.partner_model.create(
             {
                 "name": "Former Employee",
                 "is_company": False,
-                "parent_id": self.company.id,
+                "parent_id": company.id,
                 "active": False,
             }
         )
-        self.affiliate = self.partner_model.create(
-            {
-                "name": "Affiliate Company",
-                "is_company": True,
-                "parent_id": self.company.id,
-            }
+        affiliate = self.partner_model.create(
+            {"name": "Affiliate Company", "is_company": True, "parent_id": company.id}
         )
-        self.archived_affiliate = self.partner_model.create(
+        archived_affiliate = self.partner_model.create(
             {
                 "name": "Old Affiliate",
                 "is_company": True,
-                "parent_id": self.company.id,
+                "parent_id": company.id,
                 "active": False,
             }
         )
+        return company, contact, archived_contact, affiliate, archived_affiliate
 
     def test_child_ids_only_show_contacts(self):
-        self.assertEqual(set(self.company.child_ids.ids), {self.contact.id})
+        company, contact, *_ = self._create_partner_hierarchy()
+        self.assertEqual(set(company.child_ids.ids), {contact.id})
 
     def test_affiliate_ids_only_show_companies(self):
-        self.assertEqual(set(self.company.affiliate_ids.ids), {self.affiliate.id})
+        company, _, _, affiliate, _ = self._create_partner_hierarchy()
+        self.assertEqual(set(company.affiliate_ids.ids), {affiliate.id})
         field_context = self.partner_model._fields["affiliate_ids"].context
         self.assertFalse(field_context.get("active_test", True))
