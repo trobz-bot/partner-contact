@@ -17,4 +17,5 @@
     "depends": ["base"],
     "data": ["views/res_partner_view.xml"],
     "development_status": "Production/Stable",
+    "installable": True,
 }

@@ -8,9 +8,7 @@ class TestPartnerAffiliate(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.partner_model = cls.env["res.partner"].with_context(
-            tracking_disable=True
-        )
+        cls.partner_model = cls.env["res.partner"].with_context(tracking_disable=True)
 
     def _create_partner_hierarchy(self):
         company = self.partner_model.create(
